@@ -1,0 +1,31 @@
+{
+    "model_type": "LSTM",
+    "sequence_length": 14,
+    "num_features": 16,
+    "training_samples": 1921,
+    "test_samples": 140,
+    "performance_metrics": {
+        "MAE": 6.2798358372279575,
+        "MSE": 73.88595598882031,
+        "RMSE": 8.595694037645844,
+        "R2": 0.1159652449157742
+    },
+    "features_used": [
+        "Minimum Temperature degrees (F)",
+        "Precipitation (inches)",
+        "Snow (inches)",
+        "Snow Depth (inches)",
+        "temp_range",
+        "avg_temp",
+        "month_sin",
+        "month_cos",
+        "day_sin",
+        "day_cos",
+        "has_precipitation",
+        "has_snow",
+        "temp_lag_1",
+        "temp_lag_2",
+        "temp_lag_7",
+        "is_weekend"
+    ]
+}

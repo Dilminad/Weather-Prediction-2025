@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Prediction System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1><i class="fas fa-thermometer-half"></i> Weather Temperature Predictor</h1>
+            <p class="subtitle">Input actual weather data for accurate temperature predictions</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel - Input Forms -->
+            <div class="left-panel">
+                <!-- Quick Prediction Form -->
+                <div class="card">
+                    <h2><i class="fas fa-bolt"></i> Quick Prediction</h2>
+                    <div class="prediction-form">
+                        <div class="form-group">
+                            <label for="location"><i class="fas fa-map-marker-alt"></i> Location</label>
+                            <select id="location" class="form-control">
+                                <option value="new_york">New York</option>
+                                <option value="los_angeles">Los Angeles</option>
+                                <option value="chicago">Chicago</option>
+                                <option value="miami">Miami</option>
+                                <option value="custom">Custom Coordinates</option>
+                            </select>
+                        </div>
+                        
+                        <div id="custom-coords" style="display: none;">
+                            <div class="form-group">
+                                <label>Latitude</label>
+                                <input type="number" id="latitude" class="form-control" placeholder="40.7128" step="0.0001">
+                            </div>
+                            <div class="form-group">
+                                <label>Longitude</label>
+                                <input type="number" id="longitude" class="form-control" placeholder="-74.0060" step="0.0001">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="date"><i class="fas fa-calendar"></i> Date</label>
+                            <input type="date" id="date" class="form-control" value="{{ current_date }}">
+                        </div>
+
+                        <button class="btn btn-predict" onclick="getCurrentWeather()">
+                            <i class="fas fa-cloud-sun"></i> Get Current Weather & Predict
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Manual Weather Input Form -->
+                <div class="card">
+                    <h2><i class="fas fa-edit"></i> Manual Weather Input</h2>
+                    <div class="manual-input-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-temperature-high"></i> Current Temp (°F)</label>
+                                <input type="number" id="current-temp" class="form-control" placeholder="70" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-tint"></i> Humidity (%)</label>
+                                <input type="number" id="humidity" class="form-control" placeholder="65" min="0" max="100">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-weight-hanging"></i> Pressure (hPa)</label>
+                                <input type="number" id="pressure" class="form-control" placeholder="1013" min="900" max="1100">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-wind"></i> Wind Speed (mph)</label>
+                                <input type="number" id="wind-speed" class="form-control" placeholder="8.2" step="0.1" min="0">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-cloud-rain"></i> Precipitation (in)</label>
+                                <input type="number" id="precipitation" class="form-control" placeholder="0.0" step="0.01" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-cloud"></i> Cloud Cover (%)</label>
+                                <input type="number" id="cloud-cover" class="form-control" placeholder="30" min="0" max="100">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-sun"></i> Previous Day Temperature (°F)</label>
+                            <input type="number" id="prev-day-temp" class="form-control" placeholder="68" step="0.1">
+                        </div>
+
+                        <button class="btn btn-predict" onclick="predictFromManualInput()">
+                            <i class="fas fa-calculator"></i> Calculate Prediction
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Batch Prediction -->
+                <div class="card">
+                    <h2><i class="fas fa-upload"></i> Batch Prediction</h2>
+                    <div class="upload-area">
+                        <p>Upload CSV with weather data for multiple predictions</p>
+                        <div class="file-upload">
+                            <input type="file" id="batch-file" accept=".csv" class="file-input">
+                            <label for="batch-file" class="file-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Choose CSV File</span>
+                            </label>
+                        </div>
+                        
+                        <div class="upload-info">
+                            <p><strong>CSV Format:</strong></p>
+                            <pre style="font-size: 0.8rem; margin: 5px 0;">
+date,humidity,pressure,wind_speed,precipitation,cloud_cover,prev_day_temp,latitude,longitude
+2024-01-01,65,1012,8.2,0.0,30,68,40.7128,-74.0060
+2024-01-02,60,1015,6.5,0.1,20,70,40.7128,-74.0060</pre>
+                        </div>
+                        
+                        <button class="btn btn-upload" onclick="processBatchFile()">
+                            <i class="fas fa-cogs"></i> Process Batch Prediction
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Results & Visualization -->
+            <div class="right-panel">
+                <!-- Prediction Results -->
+                <div class="card">
+                    <h2><i class="fas fa-chart-line"></i> Prediction Results</h2>
+                    <div id="prediction-results">
+                        <div class="no-prediction">
+                            <i class="fas fa-chart-bar fa-3x"></i>
+                            <p>Enter weather data to get predictions</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Importance -->
+                <div class="card">
+                    <h2><i class="fas fa-chart-pie"></i> Feature Importance</h2>
+                    <div class="chart-container">
+                        <canvas id="featureChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Prediction History -->
+                <div class="card">
+                    <h2><i class="fas fa-history"></i> Recent Predictions</h2>
+                    <div class="table-container">
+                        <table id="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Input Temp</th>
+                                    <th>Predicted Min</th>
+                                    <th>Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body">
+                                <!-- History will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Visualization Panel -->
+        <div class="visualization-panel">
+            <div class="card full-width">
+                <h2><i class="fas fa-chart-area"></i> Weather Analysis</h2>
+                <div class="chart-row">
+                    <div class="chart-box">
+                        <h4>Temperature Trend</h4>
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h4>Feature Correlation</h4>
+                        <canvas id="correlationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Application Status</h4>
+                    <button class="btn-footer" onclick="checkApiHealth()">
+                        <i class="fas fa-heartbeat"></i> Check API Health
+                    </button>
+                    <button class="btn-footer" onclick="getModelInfo()">
+                        <i class="fas fa-brain"></i> Model Info
+                    </button>
+                    <button class="btn-footer" onclick="retrainModel()">
+                        <i class="fas fa-sync-alt"></i> Retrain Model
+                    </button>
+                </div>
+                <div class="footer-section">
+                    <p><i class="fas fa-info-circle"></i> Input actual weather data for accurate predictions</p>
+                    <p class="status" id="api-status">Ready for input</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+            
+            // Show/hide custom coordinates
+            document.getElementById('location').addEventListener('change', function() {
+                const customCoords = document.getElementById('custom-coords');
+                customCoords.style.display = this.value === 'custom' ? 'block' : 'none';
+            });
+            
+            // Check API health on load
+            checkApiHealth();
+        });
+    </script>
+</body>
+</html>
